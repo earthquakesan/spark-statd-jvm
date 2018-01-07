@@ -1,0 +1,64 @@
+version: "2"
+
+services:
+  namenode:
+    image: bde2020/hadoop-namenode:2.0.0-hadoop2.7.4-java8
+    container_name: namenode
+    volumes:
+      - ./data/namenode:/hadoop/dfs/name
+    environment:
+      - CLUSTER_NAME=test
+    env_file:
+      - ./hadoop-hive.env
+    ports:
+      - "50070:50070"
+  datanode:
+    image: bde2020/hadoop-datanode:2.0.0-hadoop2.7.4-java8
+    container_name: datanode
+    volumes:
+      - ./data/datanode:/hadoop/dfs/data
+    environment:
+      SERVICE_PRECONDITION: "namenode:50070"
+    env_file:
+      - ./hadoop-hive.env
+    ports:
+      - "50075:50075"
+  spark-master:
+    image: bde2020/spark-master:1.6.3-nohadoop-java8
+    container_name: spark-master
+    environment:
+      CORE_CONF_fs_defaultFS: "hdfs://namenode:8020"
+      SERVICE_PRECONDITION: "namenode:50070 datanode:50075"
+    env_file:
+      - ./hadoop-hive.env
+    ports:
+      - "8080:8080"
+      - "7077:7077"
+  spark-worker:
+    image: bde2020/spark-worker:1.6.3-nohadoop-java8
+    container_name: spark-worker
+    environment:
+      SPARK_MASTER: "spark://spark-master:7077"
+      SERVICE_PRECONDITION: "spark-master:8080"
+    env_file:
+      - ./hadoop-hive.env
+    ports:
+      - "8081:8081"
+  influxdb:
+    image: influxdb:1.4.2
+    environment:
+      INFLUXDB_ADMIN_USER: "admin"
+      INFLUXDB_ADMIN_PASSWORD: "admin"
+      INFLUXDB_DB: "spark"
+    ports:
+      # Meta port (Raft peers comm)
+      - 8088:8088
+      # HTTP server port
+      - 8086:8086
+    volumes:
+      - ./data/influxdb:/var/lib/influxdb
+
+networks:
+  default:
+    external:
+      name: spark-profiling
