@@ -1,7 +1,7 @@
-start-profiler: build
+start-profiler: download build
 	docker-compose -f docker-compose.profiler.yml up
 
-start-profiler-bash: build
+start-profiler-bash: download build
 	docker run -it --rm --network spark-profiling -e SPARK_MASTER=spark://spark-master:7077 -e INFLUX_HOST=influxdb -e INFLUX_HTTP_PORT=8086 -e INFLUX_DATABASE_NAME=spark -e INFLUX_USERNAME=admin -e INFLUX_PASSWORD=admin -e FLAMEGRAPH_TITLE=spark -v $(shell pwd)/graphs:/data --env-file $(shell pwd)/hadoop-hive.env spark-profiler:latest bash
 
 start-cluster: download
