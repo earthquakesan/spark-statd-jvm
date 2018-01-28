@@ -1,4 +1,4 @@
-FROM bde2020/spark-submit:1.6.3-nohadoop-java8
+FROM bde2020/spark-submit:1.6.3-nohadoop-java8-scala2.11
 
 RUN apt-get update && apt-get install -y vim perl-modules
 RUN apt-get install -y python2.7

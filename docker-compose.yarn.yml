@@ -1,0 +1,96 @@
+version: "2"
+
+services:
+  namenode:
+    #image: bde2020/hadoop-namenode:2.0.0-hadoop2.7.4-java8
+    build: ./hadoop/namenode
+    container_name: namenode
+    volumes:
+      - ./data/namenode:/hadoop/dfs/name
+    environment:
+      - CLUSTER_NAME=test
+    env_file:
+      - ./hadoop.env
+    ports:
+      - "50070:50070"
+  datanode:
+    #image: bde2020/hadoop-datanode:2.0.0-hadoop2.7.4-java8
+    build: ./hadoop/datanode
+    container_name: datanode
+    volumes:
+      - ./data/datanode:/hadoop/dfs/data
+    environment:
+      SERVICE_PRECONDITION: "namenode:50070"
+    env_file:
+      - ./hadoop.env
+    ports:
+      - "50075:50075"
+  resourcemanager:
+    #image: bde2020/hadoop-resourcemanager:2.0.0-hadoop2.7.4-java8
+    build: ./hadoop/resourcemanager
+    container_name: resourcemanager
+    environment:
+      SERVICE_PRECONDITION: "namenode:50070 datanode:50075"
+    ports:
+      - "8088:8088"
+    env_file:
+      - ./hadoop.env
+  nodemanager:
+    #image: bde2020/hadoop-nodemanager:2.0.0-hadoop2.7.4-java8
+    build: ./hadoop/nodemanager
+    container_name: nodemanager
+    environment:
+      SERVICE_PRECONDITION: "namenode:50070 datanode:50075 resourcemanager:8088"
+    ports:
+      - "8042:8042"
+    env_file:
+      - ./hadoop.env
+  historyserver:
+    #image: bde2020/hadoop-historyserver:2.0.0-hadoop2.7.4-java8
+    build: ./hadoop/historyserver
+    container_name: historyserver
+    environment:
+      SERVICE_PRECONDITION: "namenode:50070 datanode:50075 resourcemanager:8088"
+    ports:
+      - "8188:8188"
+    env_file:
+      - ./hadoop.env
+  spark-master:
+    image: bde2020/spark-master:1.6.3-nohadoop-java8-scala2.11
+    container_name: spark-master
+    environment:
+      CORE_CONF_fs_defaultFS: "hdfs://namenode:9000"
+      SERVICE_PRECONDITION: "namenode:50070 datanode:50075"
+    env_file:
+      - ./hadoop.env
+    ports:
+      - "8080:8080"
+      - "7077:7077"
+  spark-worker:
+    image: bde2020/spark-worker:1.6.3-nohadoop-java8-scala2.11
+    container_name: spark-worker
+    environment:
+      SPARK_MASTER: "spark://spark-master:7077"
+      SERVICE_PRECONDITION: "spark-master:8080"
+    env_file:
+      - ./hadoop.env
+    ports:
+      - "8081:8081"
+  influxdb:
+    image: influxdb:1.4.2
+    environment:
+      INFLUXDB_ADMIN_USER: "admin"
+      INFLUXDB_ADMIN_PASSWORD: "admin"
+      INFLUXDB_DB: "spark"
+    ports:
+      # Meta port (Raft peers comm)
+      - 10088:8088
+      # HTTP server port
+      - 10086:8086
+    volumes:
+      - ./data/influxdb:/var/lib/influxdb
+
+networks:
+  default:
+    external:
+      name: spark-profiling

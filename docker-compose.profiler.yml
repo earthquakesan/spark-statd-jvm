@@ -6,16 +6,20 @@ services:
     container_name: spark-profiler
     environment:
       SPARK_MASTER: "spark://spark-master:7077"
+      SPARK_ADDITIONAL_CONF: "--executor-memory 4G --num-executors 4"
+      SPARK_APPLICATION_JAR_LOCATION: "/spark/lib/spark-examples-1.6.3-hadoop2.2.0.jar"
+      SPARK_APPLICATION_MAIN_CLASS: "org.apache.spark.examples.SparkPi"
+      STATS_PROFILER_LOCATION: ""
       INFLUX_HOST: "influxdb"
       INFLUX_HTTP_PORT: "8086"
       INFLUX_DATABASE_NAME: "spark"
       INFLUX_USERNAME: "admin"
       INFLUX_PASSWORD: "admin"
-      FLAMEGRAPH_TITLE: "Spark Application"
+      FLAMEGRAPH_TITLE: "SparkPi Application"
     volumes:
       - ./graphs:/graphs
     env_file:
-      - ./hadoop-hive.env
+      - ./hadoop.env
 
 networks:
   default:
